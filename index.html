@@ -1,1 +1,1181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Data Siswa</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --sidebar-bg: #1e293b;
+            --sidebar-active: #0ea5e9;
+            --sidebar-hover: #334155;
+            --primary-color: #3b82f6;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #0ea5e9;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            min-height: 100vh;
+            background-color: var(--sidebar-bg);
+            color: white;
+            position: fixed;
+            transition: all 0.3s;
+            z-index: 1000;
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar-collapsed {
+            margin-left: calc(-1 * var(--sidebar-width));
+        }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            transition: all 0.3s;
+            width: calc(100% - var(--sidebar-width));
+        }
+        
+        .main-content-expanded {
+            margin-left: 0;
+            width: 100%;
+        }
+        
+        .nav-link {
+            color: #e2e8f0;
+            border-radius: 0.375rem;
+            margin: 0.25rem 0.5rem;
+            padding: 0.75rem 1rem;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover {
+            background-color: var(--sidebar-hover);
+            color: white;
+        }
+        
+        .nav-link.active {
+            background-color: var(--sidebar-active);
+            color: white;
+            font-weight: 500;
+        }
+        
+        .nav-link i {
+            width: 24px;
+            text-align: center;
+            margin-right: 12px;
+        }
+        
+        .card-gradient {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        .toggle-sidebar {
+            position: fixed;
+            left: 10px;
+            top: 10px;
+            z-index: 1050;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+        }
+        
+        .logo-container {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid #334155;
+            margin-bottom: 1rem;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo i {
+            margin-right: 0.75rem;
+            color: var(--sidebar-active);
+        }
+        
+        @media (max-width: 992px) {
+            .sidebar {
+                margin-left: calc(-1 * var(--sidebar-width));
+            }
+            
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            .sidebar-show {
+                margin-left: 0;
+            }
+            
+            .main-content-sidebar-show {
+                margin-left: var(--sidebar-width);
+                width: calc(100% - var(--sidebar-width));
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Toggle Sidebar Button (Mobile) -->
+    <button class="toggle-sidebar d-lg-none" id="toggleSidebar">
+        <i class="fas fa-bars"></i>
+    </button>
 
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="logo-container">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span>MataTech</span>
+            </div>
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" id="dashboard-tab">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="data-tab">
+                    <i class="fas fa-table"></i> Data Siswa
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="charts-tab">
+                    <i class="fas fa-chart-pie"></i> Analisis
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="export-tab">
+                    <i class="fas fa-file-export"></i> Ekspor Data
+                </a>
+            </li>
+        </ul>
+        
+        <!-- Sidebar Footer -->
+        <div class="position-absolute bottom-0 start-0 end-0 p-3 text-center text-gray-400">
+            <small>Version 1.0.0</small>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <div class="container-fluid py-4">
+            <!-- Dashboard Tab -->
+            <div id="dashboard-content">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3">
+                    <h1 class="h2 text-gray-800 font-bold">Dashboard Data Siswa</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-calendar me-1"></i> Hari Ini
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cards -->
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card card-gradient shadow-sm rounded-lg">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="card-title text-white opacity-75 mb-1">Total Siswa</h5>
+                                        <h2 class="mb-0 text-white" id="total-siswa">0</h2>
+                                        <small class="text-white opacity-75">Semua Kelas</small>
+                                    </div>
+                                    <div class="bg-white bg-opacity-20 p-3 rounded-full">
+                                        <i class="fas fa-users fa-2x text-white"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card bg-white shadow-sm rounded-lg">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="card-title text-gray-600 mb-1">Siswa Laki-laki</h5>
+                                        <h2 class="mb-0 text-gray-800" id="total-laki">0</h2>
+                                        <small class="text-gray-500">Jumlah siswa</small>
+                                    </div>
+                                    <div class="bg-blue-100 p-3 rounded-full">
+                                        <i class="fas fa-male fa-2x text-blue-600"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card bg-white shadow-sm rounded-lg">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="card-title text-gray-600 mb-1">Siswa Perempuan</h5>
+                                        <h2 class="mb-0 text-gray-800" id="total-perempuan">0</h2>
+                                        <small class="text-gray-500">Jumlah siswa</small>
+                                    </div>
+                                    <div class="bg-pink-100 p-3 rounded-full">
+                                        <i class="fas fa-female fa-2x text-pink-600"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card bg-white shadow-sm rounded-lg">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="card-title text-gray-600 mb-1">Asal Sekolah</h5>
+                                        <h2 class="mb-0 text-gray-800" id="total-asal">0</h2>
+                                        <small class="text-gray-500">Beragam sekolah</small>
+                                    </div>
+                                    <div class="bg-purple-100 p-3 rounded-full">
+                                        <i class="fas fa-school fa-2x text-purple-600"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Section -->
+                <div class="card shadow-sm mb-4 border-0">
+                    <div class="card-body">
+                        <h5 class="card-title text-gray-800 mb-3">Filter Data</h5>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="filter-kelas" class="form-label">Kelas</label>
+                                <select id="filter-kelas" class="form-select">
+                                    <option value="">Semua Kelas</option>
+                                    <!-- Options will be populated by JavaScript -->
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="filter-asal" class="form-label">Asal Sekolah</label>
+                                <select id="filter-asal" class="form-select">
+                                    <option value="">Semua Asal Sekolah</option>
+                                    <!-- Options will be populated by JavaScript -->
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="filter-jurusan" class="form-label">Jurusan</label>
+                                <select id="filter-jurusan" class="form-select">
+                                    <option value="">Semua Jurusan</option>
+                                    <!-- Options will be populated by JavaScript -->
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="filter-jk" class="form-label">Jenis Kelamin</label>
+                                <select id="filter-jk" class="form-select">
+                                    <option value="">Semua</option>
+                                    <option value="L">Laki-laki</option>
+                                    <option value="P">Perempuan</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button id="reset-filter" class="btn btn-outline-secondary me-2">
+                                <i class="fas fa-sync-alt me-1"></i> Reset
+                            </button>
+                            <button id="apply-filter" class="btn btn-primary">
+                                <i class="fas fa-filter me-1"></i> Terapkan Filter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="row">
+                    <div class="col-lg-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="card-title text-gray-800 mb-0">Distribusi Kelas</h5>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="kelasChartDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="kelasChartDropdown">
+                                            <li><a class="dropdown-item" href="#" id="kelasBarChart">Bar Chart</a></li>
+                                            <li><a class="dropdown-item" href="#" id="kelasPieChart">Pie Chart</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="kelasChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="card-title text-gray-800 mb-0">Asal Sekolah</h5>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="asalChartDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="asalChartDropdown">
+                                            <li><a class="dropdown-item" href="#" id="asalBarChart">Bar Chart</a></li>
+                                            <li><a class="dropdown-item" href="#" id="asalDoughnutChart">Doughnut Chart</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="asalChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Tab -->
+            <div id="data-content" style="display: none;">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3">
+                    <h1 class="h2 text-gray-800 font-bold">Data Siswa</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-data">
+                                <i class="fas fa-sync-alt me-1"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="siswaTable" class="table table-hover" style="width:100%">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>NIPD</th>
+                                        <th>NISN</th>
+                                        <th>Nama Lengkap</th>
+                                        <th>JK</th>
+                                        <th>Tempat Lahir</th>
+                                        <th>Tanggal Lahir</th>
+                                        <th>Jurusan</th>
+                                        <th>Asal Sekolah</th>
+                                        <th>Kelas</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Data will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Tab -->
+            <div id="charts-content" style="display: none;">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3">
+                    <h1 class="h2 text-gray-800 font-bold">Analisis Data</h1>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <h5 class="card-title text-gray-800 mb-3">Distribusi Jenis Kelamin</h5>
+                                <div class="chart-container">
+                                    <canvas id="jkChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <h5 class="card-title text-gray-800 mb-3">Distribusi Jurusan</h5>
+                                <div class="chart-container">
+                                    <canvas id="jurusanChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12 mb-4">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title text-gray-800 mb-3">Kategori Asal Sekolah</h5>
+                                <div class="chart-container">
+                                    <canvas id="kategoriAsalChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Tab -->
+            <div id="export-content" style="display: none;">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3">
+                    <h1 class="h2 text-gray-800 font-bold">Ekspor Data</h1>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <h5 class="card-title text-gray-800 mb-3">Ekspor ke Excel</h5>
+                                <p class="text-gray-600 mb-4">Pilih kriteria data yang akan diekspor ke format Excel:</p>
+                                
+                                <div class="mb-3">
+                                    <label for="excel-kelas" class="form-label">Kelas</label>
+                                    <select id="excel-kelas" class="form-select">
+                                        <option value="">Semua Kelas</option>
+                                        <!-- Options will be populated by JavaScript -->
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="excel-asal" class="form-label">Asal Sekolah</label>
+                                    <select id="excel-asal" class="form-select">
+                                        <option value="">Semua Asal Sekolah</option>
+                                        <!-- Options will be populated by JavaScript -->
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="excel-kategori-asal" class="form-label">Kategori Asal</label>
+                                    <select id="excel-kategori-asal" class="form-select">
+                                        <option value="">Semua Kategori</option>
+                                        <option value="SMP">SMP</option>
+                                        <option value="MTS">MTS</option>
+                                        <option value="Lainnya">Lainnya</option>
+                                    </select>
+                                </div>
+                                
+                                <button id="export-excel-btn" class="btn btn-success w-100">
+                                    <i class="fas fa-file-excel me-2"></i> Ekspor ke Excel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <h5 class="card-title text-gray-800 mb-3">Ekspor ke PDF</h5>
+                                <p class="text-gray-600 mb-4">Pilih kriteria data yang akan diekspor ke format PDF:</p>
+                                
+                                <div class="mb-3">
+                                    <label for="pdf-kelas" class="form-label">Kelas</label>
+                                    <select id="pdf-kelas" class="form-select">
+                                        <option value="">Semua Kelas</option>
+                                        <!-- Options will be populated by JavaScript -->
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="pdf-asal" class="form-label">Asal Sekolah</label>
+                                    <select id="pdf-asal" class="form-select">
+                                        <option value="">Semua Asal Sekolah</option>
+                                        <!-- Options will be populated by JavaScript -->
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="pdf-kategori-asal" class="form-label">Kategori Asal</label>
+                                    <select id="pdf-kategori-asal" class="form-select">
+                                        <option value="">Semua Kategori</option>
+                                        <option value="SMP">SMP</option>
+                                        <option value="MTS">MTS</option>
+                                        <option value="Lainnya">Lainnya</option>
+                                    </select>
+                                </div>
+                                
+                                <button id="export-pdf-btn" class="btn btn-danger w-100">
+                                    <i class="fas fa-file-pdf me-2"></i> Ekspor ke PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3 bg-white border-top">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start">
+                    <span class="text-muted">&copy; 2025 <span class="text-primary">MataTech</span>. All rights reserved.</span>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <span class="text-muted">Dikembangkan oleh  <i class="fas fa-heart text-danger"></i> Aenun Akhkam</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- Main JavaScript -->
+    <script>
+        $(document).ready(function() {
+            // Toggle Sidebar on Mobile
+            $('#toggleSidebar').click(function() {
+                $('#sidebar').toggleClass('sidebar-show');
+                $('#mainContent').toggleClass('main-content-sidebar-show');
+                $(this).find('i').toggleClass('fa-bars fa-times');
+            });
+
+            // Tab Navigation
+            function switchTab(tab) {
+                $('.nav-link').removeClass('active');
+                $(`#${tab}-tab`).addClass('active');
+                $('[id$="-content"]').hide();
+                $(`#${tab}-content`).show();
+            }
+
+            $('#dashboard-tab').click(function() {
+                switchTab('dashboard');
+            });
+
+            $('#data-tab').click(function() {
+                switchTab('data');
+            });
+
+            $('#charts-tab').click(function() {
+                switchTab('charts');
+            });
+
+            $('#export-tab').click(function() {
+                switchTab('export');
+            });
+
+            // Load data from Google Sheets
+            const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRLDWKcRKJC6_2Zp0rY-omOqGRD799sLDzG09wZuxNgpjnjNG7DMv5sRettBwvuN-hJR7lUN_HYsMke/pub?gid=0&single=true&output=csv';
+            
+            let siswaData = [];
+            let table;
+            let kelasChart, asalChart, jkChart, jurusanChart, kategoriAsalChart;
+            let currentKelasChartType = 'bar';
+            let currentAsalChartType = 'doughnut';
+
+            function loadData() {
+                $.ajax({
+                    url: sheetUrl,
+                    dataType: 'text',
+                    success: function(data) {
+                        const rows = data.split('\n');
+                        const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                        
+                        siswaData = [];
+                        for (let i = 1; i < rows.length; i++) {
+                            const values = rows[i].split(',');
+                            if (values.length === headers.length) {
+                                const obj = {};
+                                for (let j = 0; j < headers.length; j++) {
+                                    obj[headers[j]] = values[j].trim().replace(/"/g, '');
+                                }
+                                siswaData.push(obj);
+                            }
+                        }
+                        
+                        initializeDashboard();
+                        initializeTable();
+                        initializeCharts();
+                    },
+                    error: function(error) {
+                        console.error('Error loading data:', error);
+                        alert('Gagal memuat data. Silakan coba lagi.');
+                    }
+                });
+            }
+
+            function initializeDashboard() {
+                // Update summary cards
+                updateSummaryCards(siswaData);
+                
+                // Populate filter dropdowns
+                populateDropdown('filter-kelas', 'KELAS');
+                populateDropdown('filter-asal', 'ASAL SEKOLAH');
+                populateDropdown('filter-jurusan', 'JURUSAN');
+                populateDropdown('excel-kelas', 'KELAS');
+                populateDropdown('excel-asal', 'ASAL SEKOLAH');
+                populateDropdown('pdf-kelas', 'KELAS');
+                populateDropdown('pdf-asal', 'ASAL SEKOLAH');
+                
+                // Apply filter button
+                $('#apply-filter').click(applyFilters);
+                $('#reset-filter').click(resetFilters);
+                
+                // Refresh data button
+                $('#refresh-data').click(loadData);
+                
+                // Export buttons
+                $('#export-excel-btn').click(exportExcel);
+                $('#export-pdf-btn').click(exportPDF);
+                
+                // Chart type switchers
+                $('#kelasBarChart').click(() => switchChartType('kelas', 'bar'));
+                $('#kelasPieChart').click(() => switchChartType('kelas', 'pie'));
+                $('#asalBarChart').click(() => switchChartType('asal', 'bar'));
+                $('#asalDoughnutChart').click(() => switchChartType('asal', 'doughnut'));
+            }
+            
+            function updateSummaryCards(data) {
+                $('#total-siswa').text(data.length);
+                
+                const totalLaki = data.filter(s => s['JENIS KELAMIN'] === 'L').length;
+                const totalPerempuan = data.filter(s => s['JENIS KELAMIN'] === 'P').length;
+                const totalAsal = [...new Set(data.map(item => item['ASAL SEKOLAH']))].length;
+                
+                $('#total-laki').text(totalLaki);
+                $('#total-perempuan').text(totalPerempuan);
+                $('#total-asal').text(totalAsal);
+            }
+            
+            function populateDropdown(id, property) {
+                const uniqueValues = [...new Set(siswaData.map(item => item[property]))].filter(Boolean).sort();
+                const dropdown = $(`#${id}`);
+                dropdown.empty();
+                dropdown.append(`<option value="">Semua ${property}</option>`);
+                
+                uniqueValues.forEach(value => {
+                    dropdown.append(`<option value="${value}">${value}</option>`);
+                });
+            }
+            
+            function applyFilters() {
+                const kelas = $('#filter-kelas').val();
+                const asal = $('#filter-asal').val();
+                const jurusan = $('#filter-jurusan').val();
+                const jk = $('#filter-jk').val();
+                
+                table.column(8).search(kelas).column(7).search(asal).column(6).search(jurusan).column(3).search(jk).draw();
+                
+                // Get filtered data
+                let filteredData = getFilteredData(kelas, asal, jurusan, jk);
+                
+                // Update summary cards with filtered data
+                updateSummaryCards(filteredData);
+                
+                // Update charts with filtered data
+                updateCharts(filteredData);
+            }
+            
+            function getFilteredData(kelas, asal, jurusan, jk) {
+                let filteredData = siswaData;
+                
+                if (kelas) filteredData = filteredData.filter(s => s['KELAS'] === kelas);
+                if (asal) filteredData = filteredData.filter(s => s['ASAL SEKOLAH'] === asal);
+                if (jurusan) filteredData = filteredData.filter(s => s['JURUSAN'] === jurusan);
+                if (jk) filteredData = filteredData.filter(s => s['JENIS KELAMIN'] === jk);
+                
+                return filteredData;
+            }
+            
+            function resetFilters() {
+                $('#filter-kelas').val('');
+                $('#filter-asal').val('');
+                $('#filter-jurusan').val('');
+                $('#filter-jk').val('');
+                
+                table.search('').columns().search('').draw();
+                
+                // Update summary cards with all data
+                updateSummaryCards(siswaData);
+                
+                // Update charts with all data
+                updateCharts(siswaData);
+            }
+            
+            function initializeTable() {
+                table = $('#siswaTable').DataTable({
+                    data: siswaData,
+                    columns: [
+                        { data: 'NIPD' },
+                        { data: 'NISN' },
+                        { data: 'NAMA LENGKAP' },
+                        { 
+                            data: 'JENIS KELAMIN',
+                            render: function(data) {
+                                return data === 'L' ? 'L' : 'P';
+                            }
+                        },
+                        { data: 'TEMPAT LAHIR' },
+                        { data: 'TANGGAL LAHIR' },
+                        { data: 'JURUSAN' },
+                        { data: 'ASAL SEKOLAH' },
+                        { data: 'KELAS' }
+                    ],
+                    responsive: true,
+                    dom: '<"top"f>rt<"bottom"lip><"clear">',
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
+                    },
+                    pageLength: 10,
+                    lengthMenu: [5, 10, 25, 50, 100]
+                });
+            }
+            
+            function initializeCharts() {
+                // Kelas Distribution Chart
+                const kelasCtx = document.getElementById('kelasChart').getContext('2d');
+                kelasChart = createChart(kelasCtx, 'bar', getKelasData(siswaData));
+                
+                // Asal Sekolah Distribution Chart
+                const asalCtx = document.getElementById('asalChart').getContext('2d');
+                asalChart = createChart(asalCtx, 'doughnut', getAsalData(siswaData));
+                
+                // Jenis Kelamin Chart
+                const jkCtx = document.getElementById('jkChart').getContext('2d');
+                jkChart = createChart(jkCtx, 'pie', getJKData(siswaData));
+                
+                // Jurusan Chart
+                const jurusanCtx = document.getElementById('jurusanChart').getContext('2d');
+                jurusanChart = createChart(jurusanCtx, 'polarArea', getJurusanData(siswaData));
+                
+                // Kategori Asal Sekolah Chart
+                const kategoriAsalCtx = document.getElementById('kategoriAsalChart').getContext('2d');
+                kategoriAsalChart = createChart(kategoriAsalCtx, 'bar', getKategoriAsalData(siswaData));
+            }
+            
+            function createChart(ctx, type, data) {
+                return new Chart(ctx, {
+                    type: type,
+                    data: data,
+                    options: getChartOptions(type)
+                });
+            }
+            
+            function getChartOptions(type) {
+                const commonOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: type === 'pie' || type === 'doughnut' ? 'right' : 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed ? context.parsed.y + ' siswa' : context.raw + ' siswa';
+                                }
+                            }
+                        }
+                    },
+                    scales: type === 'bar' ? {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    } : {}
+                };
+                
+                return commonOptions;
+            }
+            
+            function updateCharts(data) {
+                kelasChart.data = getKelasData(data);
+                kelasChart.update();
+                
+                asalChart.data = getAsalData(data);
+                asalChart.update();
+                
+                jkChart.data = getJKData(data);
+                jkChart.update();
+                
+                jurusanChart.data = getJurusanData(data);
+                jurusanChart.update();
+                
+                kategoriAsalChart.data = getKategoriAsalData(data);
+                kategoriAsalChart.update();
+            }
+            
+            function switchChartType(chartName, type) {
+                if (chartName === 'kelas') {
+                    currentKelasChartType = type;
+                    kelasChart.destroy();
+                    const ctx = document.getElementById('kelasChart').getContext('2d');
+                    kelasChart = createChart(ctx, type, getKelasData(getFilteredData(
+                        $('#filter-kelas').val(),
+                        $('#filter-asal').val(),
+                        $('#filter-jurusan').val(),
+                        $('#filter-jk').val()
+                    )));
+                } else if (chartName === 'asal') {
+                    currentAsalChartType = type;
+                    asalChart.destroy();
+                    const ctx = document.getElementById('asalChart').getContext('2d');
+                    asalChart = createChart(ctx, type, getAsalData(getFilteredData(
+                        $('#filter-kelas').val(),
+                        $('#filter-asal').val(),
+                        $('#filter-jurusan').val(),
+                        $('#filter-jk').val()
+                    )));
+                }
+            }
+            
+            function getKelasData(data) {
+                const kelasCounts = {};
+                
+                data.forEach(siswa => {
+                    const kelas = siswa['KELAS'];
+                    if (kelas) {
+                        kelasCounts[kelas] = (kelasCounts[kelas] || 0) + 1;
+                    }
+                });
+                
+                const sortedKelas = Object.keys(kelasCounts).sort();
+                const backgroundColors = generateColors(sortedKelas.length, 0.7);
+                const borderColors = generateColors(sortedKelas.length, 1);
+                
+                return {
+                    labels: sortedKelas,
+                    datasets: [{
+                        label: 'Jumlah Siswa',
+                        data: sortedKelas.map(k => kelasCounts[k]),
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                };
+            }
+            
+            function getAsalData(data) {
+                const asalCounts = {};
+                
+                data.forEach(siswa => {
+                    const asal = siswa['ASAL SEKOLAH'];
+                    if (asal) {
+                        asalCounts[asal] = (asalCounts[asal] || 0) + 1;
+                    }
+                });
+                
+                // Sort by count descending and take top 10
+                const sortedAsal = Object.entries(asalCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10)
+                    .map(item => item[0]);
+                
+                const backgroundColors = generateColors(sortedAsal.length, 0.7);
+                const borderColors = generateColors(sortedAsal.length, 1);
+                
+                return {
+                    labels: sortedAsal,
+                    datasets: [{
+                        data: sortedAsal.map(a => asalCounts[a]),
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                };
+            }
+            
+            function getJKData(data) {
+                const jkCounts = {
+                    'Laki-laki': data.filter(s => s['JENIS KELAMIN'] === 'L').length,
+                    'Perempuan': data.filter(s => s['JENIS KELAMIN'] === 'P').length
+                };
+                
+                return {
+                    labels: ['Laki-laki', 'Perempuan'],
+                    datasets: [{
+                        data: [jkCounts['Laki-laki'], jkCounts['Perempuan']],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 99, 132, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                };
+            }
+            
+            function getJurusanData(data) {
+                const jurusanCounts = {};
+                
+                data.forEach(siswa => {
+                    const jurusan = siswa['JURUSAN'];
+                    if (jurusan) {
+                        jurusanCounts[jurusan] = (jurusanCounts[jurusan] || 0) + 1;
+                    }
+                });
+                
+                const sortedJurusan = Object.keys(jurusanCounts).sort();
+                const backgroundColors = generateColors(sortedJurusan.length, 0.7);
+                const borderColors = generateColors(sortedJurusan.length, 1);
+                
+                return {
+                    labels: sortedJurusan,
+                    datasets: [{
+                        data: sortedJurusan.map(j => jurusanCounts[j]),
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                };
+            }
+            
+            function getKategoriAsalData(data) {
+                const kategoriCounts = {
+                    'SMP': 0,
+                    'MTS': 0,
+                    'Lainnya': 0
+                };
+                
+                data.forEach(siswa => {
+                    const asal = (siswa['ASAL SEKOLAH'] || '').toUpperCase();
+                    if (asal.includes('SMP')) {
+                        kategoriCounts['SMP']++;
+                    } else if (asal.includes('MTS') || asal.includes('MTSS') || asal.includes('MTs') || asal.includes('MTsS')) {
+                        kategoriCounts['MTS']++;
+                    } else {
+                        kategoriCounts['Lainnya']++;
+                    }
+                });
+                
+                return {
+                    labels: ['SMP', 'MTS', 'Lainnya'],
+                    datasets: [{
+                        label: 'Jumlah Siswa',
+                        data: [kategoriCounts['SMP'], kategoriCounts['MTS'], kategoriCounts['Lainnya']],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(255, 159, 64, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                };
+            }
+            
+            function generateColors(count, opacity = 1) {
+                const colors = [];
+                const hueStep = 360 / count;
+                
+                for (let i = 0; i < count; i++) {
+                    const hue = i * hueStep;
+                    colors.push(`hsla(${hue}, 70%, 60%, ${opacity})`);
+                }
+                
+                return colors;
+            }
+            
+            function getKategoriAsal(siswa) {
+                const asal = (siswa['ASAL SEKOLAH'] || '').toUpperCase();
+                if (asal.includes('SMP')) {
+                    return 'SMP';
+                } else if (asal.includes('MTS') || asal.includes('MTSS') || asal.includes('MTs') || asal.includes('MTsS')) {
+                    return 'MTS';
+                } else {
+                    return 'Lainnya';
+                }
+            }
+            
+            function exportExcel() {
+                const kelas = $('#excel-kelas').val();
+                const asal = $('#excel-asal').val();
+                const kategoriAsal = $('#excel-kategori-asal').val();
+                
+                let filteredData = siswaData;
+                if (kelas) filteredData = filteredData.filter(s => s['KELAS'] === kelas);
+                if (asal) filteredData = filteredData.filter(s => s['ASAL SEKOLAH'] === asal);
+                if (kategoriAsal) filteredData = filteredData.filter(s => getKategoriAsal(s) === kategoriAsal);
+                
+                // Sort by kategori asal: SMP first, then MTS, then Lainnya
+                const order = {'SMP': 1, 'MTS': 2, 'Lainnya': 3};
+                filteredData.sort((a, b) => order[getKategoriAsal(a)] - order[getKategoriAsal(b)]);
+                
+                // Create worksheet data array
+                const wsData = [
+                    ["NIPD", "NISN", "NAMA LENGKAP", "JENIS KELAMIN", "TEMPAT LAHIR", "TANGGAL LAHIR", "JURUSAN", "ASAL SEKOLAH", "KELAS"]
+                ];
+                
+                filteredData.forEach(siswa => {
+                    wsData.push([
+                        siswa['NIPD'] || '',
+                        siswa['NISN'] || '',
+                        siswa['NAMA LENGKAP'] || '',
+                        siswa['JENIS KELAMIN'] === 'L' ? 'Laki-laki' : 'Perempuan',
+                        siswa['TEMPAT LAHIR'] || '',
+                        siswa['TANGGAL LAHIR'] || '',
+                        siswa['JURUSAN'] || '',
+                        siswa['ASAL SEKOLAH'] || '',
+                        siswa['KELAS'] || ''
+                    ]);
+                });
+                
+                // Create worksheet
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Data Siswa");
+                
+                // Export
+                XLSX.writeFile(wb, `Data_Siswa_${new Date().toISOString().slice(0,10)}.xlsx`);
+            }
+            
+            function exportPDF() {
+                const kelas = $('#pdf-kelas').val();
+                const asal = $('#pdf-asal').val();
+                const kategoriAsal = $('#pdf-kategori-asal').val();
+                
+                let filteredData = siswaData;
+                if (kelas) filteredData = filteredData.filter(s => s['KELAS'] === kelas);
+                if (asal) filteredData = filteredData.filter(s => s['ASAL SEKOLAH'] === asal);
+                if (kategoriAsal) filteredData = filteredData.filter(s => getKategoriAsal(s) === kategoriAsal);
+                
+                // Sort by kategori asal: SMP first, then MTS, then Lainnya
+                const order = {'SMP': 1, 'MTS': 2, 'Lainnya': 3};
+                filteredData.sort((a, b) => order[getKategoriAsal(a)] - order[getKategoriAsal(b)]);
+                
+                const docDefinition = {
+                    content: [
+                        { text: 'DATA SISWA', style: 'header' },
+                        { text: `Tanggal: ${new Date().toLocaleDateString('id-ID')}`, style: 'subheader' },
+                        { text: `Kelas: ${kelas || 'Semua Kelas'}`, style: 'subheader' },
+                        { text: `Asal Sekolah: ${asal || 'Semua Asal Sekolah'}`, style: 'subheader' },
+                        { text: `Kategori Asal: ${kategoriAsal || 'Semua Kategori'}`, style: 'subheader' },
+                        {
+                            table: {
+                                headerRows: 1,
+                                widths: ['auto', 'auto', '*', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
+                                body: [
+                                    [
+                                        { text: 'NIPD', style: 'tableHeader' },
+                                        { text: 'NISN', style: 'tableHeader' },
+                                        { text: 'NAMA LENGKAP', style: 'tableHeader' },
+                                        { text: 'JK', style: 'tableHeader' },
+                                        { text: 'TEMPAT LAHIR', style: 'tableHeader' },
+                                        { text: 'TGL LAHIR', style: 'tableHeader' },
+                                        { text: 'JURUSAN', style: 'tableHeader' },
+                                        { text: 'ASAL SEKOLAH', style: 'tableHeader' },
+                                        { text: 'KELAS', style: 'tableHeader' }
+                                    ],
+                                    ...filteredData.map(siswa => [
+                                        siswa['NIPD'] || '',
+                                        siswa['NISN'] || '',
+                                        siswa['NAMA LENGKAP'] || '',
+                                        siswa['JENIS KELAMIN'] === 'L' ? 'L' : 'P',
+                                        siswa['TEMPAT LAHIR'] || '',
+                                        siswa['TANGGAL LAHIR'] || '',
+                                        siswa['JURUSAN'] || '',
+                                        siswa['ASAL SEKOLAH'] || '',
+                                        siswa['KELAS'] || ''
+                                    ])
+                                ]
+                            }
+                        }
+                    ],
+                    styles: {
+                        header: {
+                            fontSize: 18,
+                            bold: true,
+                            margin: [0, 0, 0, 10]
+                        },
+                        subheader: {
+                            fontSize: 12,
+                            margin: [0, 0, 0, 10]
+                        },
+                        tableHeader: {
+                            bold: true,
+                            fontSize: 10,
+                            color: 'black'
+                        }
+                    },
+                    defaultStyle: {
+                        fontSize: 10
+                    }
+                };
+                
+                pdfMake.createPdf(docDefinition).download(`Data_Siswa_${new Date().toISOString().slice(0,10)}.pdf`);
+            }
+            
+            // Load data initially
+            loadData();
+        });
+    </script>
+</body>
+</html>
